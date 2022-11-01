@@ -24,12 +24,14 @@ def extract_microarray_content(input_name):
 
     # take each line, turn the id into a key and the content into the key content.
     for lines in file_content:
-        lines = lines.split(",")
+        lines = lines.strip().split(",")
         probe_ID = lines.pop(0)
         probe_content = "".join(lines)
         microarray_data[probe_ID] = probe_content
 
     return microarray_data
+
+def extract_sample_annot()
 
 
 
