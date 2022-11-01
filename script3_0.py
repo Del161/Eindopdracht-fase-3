@@ -4,7 +4,7 @@ import sys
 function_placeholder
 Author: Delshad Vegter 
 date: 01/11/2022
-version: 1
+version: 1.1
 """
 def extract_microarray_content(input_name):
     """
