@@ -12,6 +12,8 @@ def extract_microarray_content(input_name):
     :param input_name: the input name given in commandline
     :return: list with content of the file
     """
+
+    # predefined variables
     probe_ID = ""
 
     microarray_data = {}
@@ -20,6 +22,7 @@ def extract_microarray_content(input_name):
         # set file lines to variable
         file_content = list(file.readlines())
 
+    # take each line, turn the id into a key and the content into the key content.
     for lines in file_content:
         lines = lines.split(",")
         probe_ID = lines.pop(0)
