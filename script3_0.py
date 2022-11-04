@@ -8,17 +8,17 @@ version: 1.1
 """
 def extract_microarray_content(gene_probes_dictionary):
     """
-    Opening of the given file, extract microarray data to dictionary.
-    :return: list with content of the file
+    Extract the highest value probes from the microarray for use
+    :param gene_probes_dictionary: dict of lists
+    :return: list of lists
     """
 
     # predefined variables
     average = 0
     microarray_data = {}
     index = 0
-    best_probes_list = []
-
-
+    highest_value_probe_gene = []
+    highvalue_probes = []
 
     with open("./data/MicroarrayExpression.csv", "r") as file:
         # set file lines to variable
@@ -50,16 +50,23 @@ def extract_microarray_content(gene_probes_dictionary):
             rowvalues.append(average)
             highest_value = max(rowvalues)
             best_probe_index = rowvalues.index(highest_value)
-        best_probes_list.append(probe_numbers[best_probe_index])
+        best_probes_list = probe_numbers[best_probe_index]
 
-        print(genes, best_probes_list)
-        best_probes_list = []
-
-
-
+        # make a list with all the highest value probes
+        highest_value_probe_gene.append(best_probes_list)
+        best_probes_list = ""
 
 
-    return
+    for lines in file_content:
+        for probes in highest_value_probe_gene:
+            if lines.startswith(probes):
+                print(probes)
+                highvalue_probes.append(lines)
+
+    print(len(file_content))
+    print(len(highvalue_probes))
+
+    return highvalue_probes
 
 def extract_sample_annot(identifier):
 
@@ -130,7 +137,7 @@ def main():
 
     probes_data = extract_sample_annot(identifier)
     gene_probes_dictionary = extract_genes()
-    extract_microarray_content(gene_probes_dictionary)
+    highvalue_probes = extract_microarray_content(gene_probes_dictionary)
 
 
 # to protect against problems when imported
