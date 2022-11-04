@@ -2,9 +2,9 @@ import sys
 
 """
 function_placeholder
-Author: Delshad Vegter 
+Author: Delshad Vegter, Bram Koobs 
 date: 01/11/2022
-version: 1.1
+version: 3
 """
 def extract_microarray_content(gene_probes_dictionary):
     """
@@ -63,36 +63,34 @@ def extract_microarray_content(gene_probes_dictionary):
                 print(probes)
                 highvalue_probes.append(lines)
 
-    print(len(file_content))
-    print(len(highvalue_probes))
-
     return highvalue_probes
 
+
 def extract_sample_annot(identifier):
+    """
+    :returns 2 lists, each containing the corresponding line number from the requested structure_acronyms.
+    """
+
+    # predefined variables
+    lines_identifier1 = []
+    lines_identifier2 = []
 
 
     with open("./data/SampleAnnot.csv", "r") as file:
-        # set file lines to variable
-        file_content = list(file.readlines())
+        sample_annot = list(file.readlines())
 
-    index = 0
-    probes_data = {}
-    locations = []
+    for id in identifier:
+        count = -1
+        for line in sample_annot:
+            count += 1
+            if id in line:
+                if id == identifier[0]:
+                    lines_identifier1.append(count)
+                else:
+                    lines_identifier2.append(count)
 
-    # take each line, turn the id into a key and the content into the key content.
-    for lines in file_content[1:]:
-        lines = lines.strip().split(",")
-        probe_ID = lines.pop(0)
-        probe_content = "".join(lines)
-        probes_data[probe_ID] = probe_content
-
-    for lines in file_content:
-        # find which line contains the identifier
-        if identifier[0] in lines:
-            locations.append(index)
-        index += 1
-
-    return probes_data
+    line_identifiers = [lines_identifier1, lines_identifier2]
+    return line_identifiers
 
 def extract_genes():
 
@@ -106,6 +104,7 @@ def extract_genes():
     with open("./data/Probes.csv", "r") as file:
         # set file lines to variable
         file_content = list(file.readlines())
+
     for lines in file_content[1:]:
         lines = lines.split(",")
         gene_id = lines.pop(2)
@@ -118,27 +117,73 @@ def extract_genes():
 
     return gene_probes_dictionary
 
+def extract_above_cutoff(line_identifiers, high_value_probes, cutoff_value):
+
+    # predefined variables
+    identifier_values1 = []
+    identifier_values2 = []
+
+    for lines in high_value_probes:
+        lines = lines.split(",")
+        probe_id = lines.pop(0)
+
+        for index in line_identifiers[0]:
+            if float(lines[int(index)]) > float(cutoff_value):
+                identifier_values1.append(probe_id)
+
+        for index in line_identifiers[1]:
+            if float(lines[int(index)]) > float(cutoff_value):
+                identifier_values2.append(probe_id)
+
+    return identifier_values1, identifier_values2
+
+def gene_name_finder(identifier_values1, identifier_values2):
+
+    identifier_1_gene = []
+    identifier_2_gene = []
+
+    with open("./data/Probes.csv", "r") as file:
+        # set file lines to variable
+        file_content = list(file.readlines())
+
+    for lines in file_content:
+        for values in identifier_values1:
+            if lines.startswith(values):
+                splitline = lines.split(",")
+                identifier_1_gene.append(splitline[3])
+
+        for values2 in identifier_values2:
+            if lines.startswith(values2):
+                splitline = lines.split(",")
+                identifier_2_gene.append(splitline[3])
+
+    return identifier_1_gene, identifier_2_gene
 
 def main():
     """
-    Main, where all functions are ran in order
+    Main, where all functions are run in order
     :return: /
     """
 
     arguments = sys.argv
 
-    if len(arguments) < 3:
+    if len(arguments) < 5:
         raise Exception(
             "No input filename given, please use commandline arguments. "
             "(python3 script2_3.py identifier identifier2)")
     else:
         # get the argument and set the variable
-        identifier = [arguments[1], arguments[2]]
+        identifier = [arguments[2], arguments[3]]
+        cutoff_value = arguments[4]
 
-    probes_data = extract_sample_annot(identifier)
+    lines_identifiers = extract_sample_annot(identifier)
     gene_probes_dictionary = extract_genes()
     highvalue_probes = extract_microarray_content(gene_probes_dictionary)
+    identifier_values1, identifier_values2 = extract_above_cutoff(lines_identifiers, highvalue_probes, cutoff_value)
+    identifier_1_gene, identifier_2_gene = gene_name_finder(identifier_values1, identifier_values2)
 
+    print(
+        f'{len(identifier_1_gene)} unique genes for {arguments[2]}: {identifier_1_gene} \n \n{len(identifier_2_gene)} unique genes for {arguments[3]}: {identifier_2_gene}')
 
 # to protect against problems when imported
 if __name__ == "__main__":
