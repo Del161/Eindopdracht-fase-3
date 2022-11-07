@@ -8,10 +8,10 @@ version: 4
 """
 
 
-def extract_microarray_content(symbol_probes_dictionary):
+def extract_microarray_content(gene_probes_dictionary):
     """
     Extract the highest value probes from the micro-array for use
-    :param symbol_probes_dictionary: dict of lists
+    :param gene_probes_dictionary: dict of lists
     :return: list of lists
     """
 
@@ -35,8 +35,8 @@ def extract_microarray_content(symbol_probes_dictionary):
 
     print("created dictionary...")
 
-    for genes in symbol_probes_dictionary:
-        probe_numbers = symbol_probes_dictionary[genes]
+    for genes in gene_probes_dictionary:
+        probe_numbers = gene_probes_dictionary[genes]
         for probes in probe_numbers:
             average = 0
 
@@ -96,14 +96,14 @@ def extract_sample_annot(identifier):
     return line_identifiers
 
 
-def extract_genes(requested_name):
+def extract_genes():
     """
     Extract the genes from the file, and put them in a dictionary with the probe id as key
     :return: dict of strings with lists.
     """
 
     # predefined vars
-    symbol_probes_dictionary = {}
+    gene_probes_dictionary = {}
 
     with open("./data/Probes.csv", "r") as file:
         # set file lines to variable
@@ -114,29 +114,14 @@ def extract_genes(requested_name):
         lines = lines.split(",")
         gene_id = lines[3]
         probe_id = lines[0]
-        gene_symbol = lines[2]
-        gene_name = lines[4]
-        entrez_id = lines[5]
-        chromosome = lines[6]
-
-        if requested_name == "gene_id":
-            requested_symbol = gene_id
-        elif requested_name == "gene_symbol":
-            requested_name = gene_symbol
-        elif requested_symbol == "gene_name":
-            requested_name = gene_name
-        elif requested_name == "entrez_id":
-            requested_symbol = entrez_id
-        elif requested_name == "chromosome":
-            requested_symbol = chromosome
 
         # create a dictionary of gene id keys with probe id content
-        if requested_symbol in symbol_probes_dictionary:
-            symbol_probes_dictionary[requested_symbol].append(probe_id)
+        if gene_id in gene_probes_dictionary:
+            gene_probes_dictionary[gene_id].append(probe_id)
         else:
-            symbol_probes_dictionary[requested_symbol] = list([probe_id])
+            gene_probes_dictionary[gene_id] = list([probe_id])
 
-    return symbol_probes_dictionary
+    return gene_probes_dictionary
 
 
 def extract_above_cutoff(line_identifiers, high_value_probes, cutoff_value):
@@ -167,7 +152,7 @@ def extract_above_cutoff(line_identifiers, high_value_probes, cutoff_value):
     return identifier_values1, identifier_values2
 
 
-def gene_name_finder(identifier_values1, identifier_values2):
+def gene_name_finder(identifier_values1, identifier_values2, requested_symbol):
     identifier_1_gene = []
     identifier_2_gene = []
 
@@ -175,23 +160,40 @@ def gene_name_finder(identifier_values1, identifier_values2):
         # set file lines to variable
         file_content = list(file.readlines())
 
+    if requested_symbol == "gene_id":
+        requested_index = 2
+    elif requested_symbol == "gene_symbol":
+        requested_index = 3
+    elif requested_symbol == "gene_name":
+        requested_index = 4
+    elif requested_symbol == "entrez_id":
+        requested_index = 5
+    elif requested_symbol == "chromosome":
+        requested_index = 6
+
     # check if the value at the indicated index is over the cutoff value, if it is append the probe id
     for lines in file_content:
         for values in identifier_values1:
             if lines.startswith(values):
                 splitline = lines.split(",")
-                identifier_1_gene.append(splitline[3])
+                identifier_1_gene.append(splitline[int(requested_index)].strip())
 
         # repeat for the second given identifier
         for values2 in identifier_values2:
             if lines.startswith(values2):
                 splitline = lines.split(",")
-                identifier_2_gene.append(splitline[3])
+                identifier_2_gene.append(splitline[int(requested_index)].strip())
 
     return set(identifier_1_gene), set(identifier_2_gene)
 
 
 def unique_or_shared(identifier_1_gene, identifier_2_gene):
+    """
+    take the extracted genes, and create new lists with the shared genes, and unique genes.
+    :param identifier_1_gene: list of genes for identifier 1
+    :param identifier_2_gene: list of genes for identifier 2
+    :return: list of shared genes, list of unique genes 1 and 2
+    """
 
     # prepare lists for use
     identifier_1_gene = set(identifier_1_gene)
@@ -245,13 +247,13 @@ def main():
     print("getting identifiers...")
     lines_identifiers = extract_sample_annot(identifier)
     print("extracting genes...")
-    symbol_probes_dictionary = extract_genes(requested_symbol)
+    gene_probes_dictionary = extract_genes()
     print("calculating highest value probes...")
-    high_value_probes = extract_microarray_content(symbol_probes_dictionary)
+    high_value_probes = extract_microarray_content(gene_probes_dictionary)
     print("removing values below cutoff...")
     identifier_values1, identifier_values2 = extract_above_cutoff(lines_identifiers, high_value_probes, cutoff_value)
     print("extracting gene names...")
-    identifier_1_gene, identifier_2_gene = gene_name_finder(identifier_values1, identifier_values2)
+    identifier_1_gene, identifier_2_gene = gene_name_finder(identifier_values1, identifier_values2, requested_symbol)
     print("checking similarities between genes...")
     common_genes, unique_genes_1, unique_genes_2 = unique_or_shared(identifier_1_gene, identifier_2_gene)
     print("done!")
