@@ -9,6 +9,7 @@ version: 4
 To use enter in the commandline: python3 script3_0.py (wanted_symbol) identifier1 identifier2 cutoff_value
 example: python3 script3_0.py gene_symbol LHM PHA 17
 possible wanted symbols: gene_symbol, gene_id, gene_name, entrez_id, chromosome
+if the found gene does not have an chromosome or entrez id, they get a replacement nan value to still show comparison.
 """
 
 
@@ -170,8 +171,19 @@ def extract_above_cutoff(line_identifiers, high_value_probes, cutoff_value):
 
 
 def gene_name_finder(identifier_values1, identifier_values2, requested_symbol):
+    """
+    Finds the requested genes, and makes them into a list
+    :param identifier_values1:
+    :param identifier_values2:
+    :param requested_symbol:
+    :return:
+    """
     identifier_1_gene = []
+    requested_index = 0
     identifier_2_gene = []
+    splitline2 = []
+    splitline3 = []
+    index = 0
 
     with open("./data/Probes.csv", "r") as file:
         # set file lines to variable
@@ -190,16 +202,62 @@ def gene_name_finder(identifier_values1, identifier_values2, requested_symbol):
 
     # check if the value at the indicated index is over the cutoff value, if it is append the probe id
     for lines in file_content:
-        for values in identifier_values1:
-            if lines.startswith(values):
-                splitline = lines.split(",")
-                identifier_1_gene.append(splitline[int(requested_index)].strip())
+        if lines.startswith(tuple(identifier_values1)):
+            lines = lines.strip()
+            splitline = lines.split(",")
+            if len(splitline) > 7:
+                # if the list is too long, that means there was a comma in the gene name, combine them again
+                block1 = splitline[0:4]
+                block2 = splitline[4:6]
+                block2.insert(1, ",")
+                block3 = splitline[6:]
+                block2 = list(["".join(block2)])
+                blocks = [block1, block2, block3]
+                splitline = []
+
+                # append them into one list again
+                for lists in blocks:
+                    for i in lists:
+                        splitline.append(i)
+            # replace the empty spots with the gene name (example: when the entrez id or chromosome is missing)
+            for strings in splitline:
+                if not strings:
+                    splitline3.append("nan" + str(index))
+                else:
+                    splitline3.append(strings)
+
+            identifier_1_gene.append(splitline3[int(requested_index)].strip())
+            splitline3 = []
 
         # repeat for the second given identifier
-        for values2 in identifier_values2:
-            if lines.startswith(values2):
-                splitline = lines.split(",")
-                identifier_2_gene.append(splitline[int(requested_index)].strip())
+        if lines.startswith(tuple(identifier_values2)):
+            lines = lines.strip()
+            splitline = lines.split(",")
+            if len(splitline) > 7:
+                # if the list is too long, that means there was a comma in the gene name, combine them again
+                block1 = splitline[0:4]
+                block2 = splitline[4:6]
+                block2.insert(1, ",")
+                block3 = splitline[6:]
+                block2 = list(["".join(block2)])
+                blocks = [block1, block2, block3]
+                splitline = []
+
+                # append them into one list again
+                for lists in blocks:
+                    for i in lists:
+                        splitline.append(i)
+
+            # replace the empty spots with the gene name (example: when the entrez id or chromosome is missing)
+            for strings in splitline:
+                if not strings:
+                    splitline2.append("nan" + str(index))
+                else:
+                    splitline2.append(strings)
+            print(splitline2)
+            index += 1
+            identifier_2_gene.append(splitline2[int(requested_index)].strip())
+            splitline2 = []
 
     return set(identifier_1_gene), set(identifier_2_gene)
 
@@ -213,8 +271,6 @@ def unique_or_shared(identifier_1_gene, identifier_2_gene):
     """
 
     # prepare lists for use
-    identifier_1_gene = set(identifier_1_gene)
-    identifier_2_gene = set(identifier_2_gene)
     identifier_1_gene = list(identifier_1_gene)
     identifier_2_gene = list(identifier_2_gene)
     common_genes = []
@@ -267,8 +323,10 @@ def main():
     gene_probes_dictionary = extract_genes()
     print("calculating highest value probes...")
     if os.path.isfile("High_Value_Probes.csv"):
+        print("pre existing file found, using already improved probes")
         high_value_probes = use_premade_probes()
     else:
+        print("no pre existing high value probes file found, creating one, this can take a while.")
         high_value_probes = extract_microarray_content(gene_probes_dictionary, identifier)
     print("removing values below cutoff...")
     identifier_values1, identifier_values2 = extract_above_cutoff(lines_identifiers, high_value_probes, cutoff_value)
@@ -279,8 +337,8 @@ def main():
     print("done!")
 
     print(
-        f'{len(unique_genes_1)} unique genes for {arguments[2]}: {unique_genes_1} \n{len(unique_genes_2)} unique genes for {arguments[3]}: {unique_genes_2}')
-    print(len(common_genes), "shared genes", common_genes)
+        f'{len(unique_genes_1)} unique {requested_symbol} for {arguments[2]}: {unique_genes_1} \n{len(unique_genes_2)} unique {requested_symbol} for {arguments[3]}: {unique_genes_2}')
+    print(len(common_genes), "shared", requested_symbol, common_genes)
 
 
 # to protect against problems when imported
