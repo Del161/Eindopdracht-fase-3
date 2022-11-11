@@ -1,14 +1,18 @@
 import sys
-
+import os.path # to check if a improved file already exists
 """
 function_placeholder
 Author: Delshad Vegter, Bram Koobs 
 date: 01/11/2022
 version: 4
+
+To use enter in the commandline: python3 script3_0.py (wanted_symbol) identifier1 identifier2 cutoff_value
+example: python3 script3_0.py gene_symbol LHM PHA 17
+possible wanted symbols: gene_symbol, gene_id, gene_name, entrez_id, chromosome
 """
 
 
-def extract_microarray_content(gene_probes_dictionary):
+def extract_microarray_content(gene_probes_dictionary, identifiers):
     """
     Extract the highest value probes from the micro-array for use
     :param gene_probes_dictionary: dict of lists
@@ -58,15 +62,28 @@ def extract_microarray_content(gene_probes_dictionary):
         # make a list with all the highest value probes
         highest_value_probe_gene.append(best_probes_list)
         best_probes_list = ""
+
     print("got highest values...")
 
-    # this part takes forever, might want to look at changing this
     for lines in file_content:
-        for probes in highest_value_probe_gene:
-            if lines.startswith(probes):
-                high_value_probes.append(lines)
+        if lines.startswith(tuple(highest_value_probe_gene)):
+            high_value_probes.append(lines)
+    print("made high value list...")
+
+    with open("High_Value_Probes.csv", "w") as writefile:
+        for lines in file_content:
+            if lines.startswith(tuple(highest_value_probe_gene)):
+                writefile.write(lines)
 
     return high_value_probes
+
+def use_premade_probes():
+
+    with open("High_Value_Probes.csv", "r") as file:
+        # set file lines to variable
+        high_value_probes = list(file.readlines())
+
+    return  high_value_probes
 
 
 def extract_sample_annot(identifier):
@@ -249,7 +266,10 @@ def main():
     print("extracting genes...")
     gene_probes_dictionary = extract_genes()
     print("calculating highest value probes...")
-    high_value_probes = extract_microarray_content(gene_probes_dictionary)
+    if os.path.isfile("High_Value_Probes.csv"):
+        high_value_probes = use_premade_probes()
+    else:
+        high_value_probes = extract_microarray_content(gene_probes_dictionary, identifier)
     print("removing values below cutoff...")
     identifier_values1, identifier_values2 = extract_above_cutoff(lines_identifiers, high_value_probes, cutoff_value)
     print("extracting gene names...")
