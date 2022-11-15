@@ -1,12 +1,12 @@
 """
 Takes information from a multitude of files, and returns the information the user requested
-Author: Delshad Vegter, Bram Koobs
+Author: Delshad Vegter
 date: 01/11/2022
 version: 5
 To use, enter into the commandline:
             python3 script3_0.py (wanted_symbol) identifier1 identifier2 cutoff_value
 example: python3 script3_0.py gene_symbol LHM PHA 17
-possible wanted symbols: gene_symbol, gene_id, gene_name, entrez_id, chromosome
+possible requested symbols: gene_symbol, gene_id, gene_name, entrez_id, chromosome
 if the found gene does not have a chromosome or entrez id,-
 -they get a replacement nan value to still show comparison.
 """
@@ -124,7 +124,10 @@ def extract_sample_annot(identifier):
         sample_annot = list(file.readlines())
 
     for ids in identifier:
+        # count is 1 lower than it should be, because
+        # the horizontal index starts at 0 not 1
         count = 0
+        # this starts at 1 to skip the header
         for line in sample_annot[1:]:
             count += 1
             if ids in line:
@@ -372,11 +375,13 @@ def main():
     print("removing values below cutoff...")
     identifier_values1, identifier_values2 = \
         extract_above_cutoff(lines_identifiers, high_value_probes, cutoff_value)
+
     print("extracting gene names...")
     probes_file_content = read_probes_content()
     identifier_1_gene, identifier_2_gene = \
         gene_name_finder(identifier_values1, identifier_values2,
                          requested_symbol, probes_file_content)
+
     print("checking similarities between genes...")
     common_genes, unique_genes_1, unique_genes_2 = \
         unique_or_shared(identifier_1_gene, identifier_2_gene)
