@@ -38,7 +38,7 @@ def extract_microarray_content(gene_probes_dictionary, microarray_content):
     microarray_data = {}
     highest_value_probe_gene = []
     high_value_probes = []
-    rowvalues = []
+    row_values = []
 
     # take each line, turn the id into a key and the content into the key content.
     for line in microarray_content:
@@ -62,12 +62,12 @@ def extract_microarray_content(gene_probes_dictionary, microarray_content):
 
             # get the index of the highest value probe
             average = average / len(microarray_row)
-            rowvalues.append(average)
+            row_values.append(average)
 
         # get the index of the probe with the highest value, and append it to a list
-        highest_value = max(rowvalues)
-        best_probe_index = rowvalues.index(highest_value)
-        rowvalues = []
+        highest_value = max(row_values)
+        best_probe_index = row_values.index(highest_value)
+        row_values = []
         # make a list with all the highest value probes
         highest_value_probe_gene.append(probe_numbers[best_probe_index])
 
@@ -351,11 +351,13 @@ def main():
         raise Exception(
             "No input filename given, please use commandline arguments. "
             "(python3 script2_3.py identifier identifier2)")
+
     # get the argument and set the variable
     identifier = [arguments[2], arguments[3]]
     cutoff_value = arguments[4]
     requested_symbol = arguments[1]
 
+    # print lines to track progress
     print("getting identifiers...")
     lines_identifiers = extract_sample_annot(identifier)
     print("extracting genes...")
