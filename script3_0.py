@@ -1,19 +1,27 @@
-import sys
-import os.path # to check if a improved file already exists
 """
-function_placeholder
-Author: Delshad Vegter, Bram Koobs 
+Takes information from a multitude of files, and returns the information the user requested
+Author: Delshad Vegter, Bram Koobs
 date: 01/11/2022
 version: 4
-
-To use enter in the commandline: python3 script3_0.py (wanted_symbol) identifier1 identifier2 cutoff_value
+To use enter in the commandline:
+            python3 script3_0.py (wanted_symbol) identifier1 identifier2 cutoff_value
 example: python3 script3_0.py gene_symbol LHM PHA 17
 possible wanted symbols: gene_symbol, gene_id, gene_name, entrez_id, chromosome
-if the found gene does not have an chromosome or entrez id, they get a replacement nan value to still show comparison.
+if the found gene does not have an chromosome or entrez id,-
+-they get a replacement nan value to still show comparison.
 """
+import sys
+import os.path # to check if a improved file already exists
 
+def read_microarray_content():
 
-def extract_microarray_content(gene_probes_dictionary, identifiers):
+    with open("./data/MicroarrayExpression.csv", "r") as file:
+        # set file lines to variable
+        microarray_content = list(file.readlines())
+
+    return microarray_content
+
+def extract_microarray_content(gene_probes_dictionary, microarray_content):
     """
     Extract the highest value probes from the micro-array for use
     :param gene_probes_dictionary: dict of lists
@@ -21,18 +29,13 @@ def extract_microarray_content(gene_probes_dictionary, identifiers):
     """
 
     # predefined variables
-    average = 0
     microarray_data = {}
     highest_value_probe_gene = []
     high_value_probes = []
     rowvalues = []
 
-    with open("./data/MicroarrayExpression.csv", "r") as file:
-        # set file lines to variable
-        file_content = list(file.readlines())
-
     # take each line, turn the id into a key and the content into the key content.
-    for line in file_content:
+    for line in microarray_content:
         line = line.strip().split(",")
         probe_id = line.pop(0)
         probe_content = line
@@ -66,19 +69,25 @@ def extract_microarray_content(gene_probes_dictionary, identifiers):
 
     print("got highest values...")
 
-    for lines in file_content:
+    # create a list with only the high value probes.
+    for lines in microarray_content:
         if lines.startswith(tuple(highest_value_probe_gene)):
             high_value_probes.append(lines)
     print("made high value list...")
 
-    with open("High_Value_Probes.csv", "w") as writefile:
-        for lines in file_content:
-            if lines.startswith(tuple(highest_value_probe_gene)):
-                writefile.write(lines)
-
     return high_value_probes
 
+def write_intermediate_file(high_value_probes):
+    # create a file with all the high value probes, so it doesnt have to be repeated the next run.
+    with open("High_Value_Probes.csv", "w") as writefile:
+        for lines in high_value_probes:
+                writefile.write(lines)
+
 def use_premade_probes():
+    """
+    if a premade list with high value probes already exists, use that instead of creating one again.
+    return: list of strings
+    """
 
     with open("High_Value_Probes.csv", "r") as file:
         # set file lines to variable
@@ -90,7 +99,8 @@ def use_premade_probes():
 def extract_sample_annot(identifier):
     """
     :param list of strings
-    :returns 2 lists, each containing the corresponding line number from the requested structure_acronyms.
+    :returns 2 lists, each containing the corresponding
+    line number from the requested structure_acronyms.
     """
 
     # predefined variables
@@ -100,12 +110,12 @@ def extract_sample_annot(identifier):
     with open("./data/SampleAnnot.csv", "r") as file:
         sample_annot = list(file.readlines())
 
-    for ID in identifier:
+    for ids in identifier:
         count = 0
         for line in sample_annot[1:]:
             count += 1
-            if ID in line:
-                if ID == identifier[0]:
+            if ids in line:
+                if ids == identifier[0]:
                     lines_identifier1.append(count)
                 else:
                     lines_identifier2.append(count)
@@ -179,7 +189,13 @@ def gene_name_finder(identifier_values1, identifier_values2, requested_symbol):
     :return:
     """
     identifier_1_gene = []
-    requested_index = 0
+    index_dict = {
+        "gene_id": 2,
+        "gene_symbol": 3,
+        "gene_name": 4,
+        "entrez_id": 5,
+        "chromosome": 6
+    }
     identifier_2_gene = []
     splitline2 = []
     splitline3 = []
@@ -189,24 +205,21 @@ def gene_name_finder(identifier_values1, identifier_values2, requested_symbol):
         # set file lines to variable
         file_content = list(file.readlines())
 
-    if requested_symbol == "gene_id":
-        requested_index = 2
-    elif requested_symbol == "gene_symbol":
-        requested_index = 3
-    elif requested_symbol == "gene_name":
-        requested_index = 4
-    elif requested_symbol == "entrez_id":
-        requested_index = 5
-    elif requested_symbol == "chromosome":
-        requested_index = 6
+    if requested_symbol in index_dict:
+        requested_index = index_dict.get(requested_symbol)
+    else:
+        raise Exception("Incorrect requested symbol available options are:"
+                        "gene_id gene_symbol gene_name entrez_id chromosome")
 
-    # check if the value at the indicated index is over the cutoff value, if it is append the probe id
+    # check if the value at the indicated index is over the cutoff value,
+    # if it is append the probe id
     for lines in file_content:
         if lines.startswith(tuple(identifier_values1)):
             lines = lines.strip()
             splitline = lines.split(",")
             if len(splitline) > 7:
-                # if the list is too long, that means there was a comma in the gene name, combine them again
+                # if the list is too long, that means there was a comma in the gene name,
+                # combine them again
                 block1 = splitline[0:4]
                 block2 = splitline[4:6]
                 block2.insert(1, ",")
@@ -219,7 +232,8 @@ def gene_name_finder(identifier_values1, identifier_values2, requested_symbol):
                 for lists in blocks:
                     for i in lists:
                         splitline.append(i)
-            # replace the empty spots with the gene name (example: when the entrez id or chromosome is missing)
+            # replace the empty spots with the gene name
+            # (example: when the entrez id or chromosome is missing)
             for strings in splitline:
                 if not strings:
                     splitline3.append("nan" + str(index))
@@ -234,7 +248,8 @@ def gene_name_finder(identifier_values1, identifier_values2, requested_symbol):
             lines = lines.strip()
             splitline = lines.split(",")
             if len(splitline) > 7:
-                # if the list is too long, that means there was a comma in the gene name, combine them again
+                # if the list is too long, that means there was a comma in the gene name,
+                # combine them again
                 block1 = splitline[0:4]
                 block2 = splitline[4:6]
                 block2.insert(1, ",")
@@ -247,8 +262,8 @@ def gene_name_finder(identifier_values1, identifier_values2, requested_symbol):
                 for lists in blocks:
                     for i in lists:
                         splitline.append(i)
-
-            # replace the empty spots with the gene name (example: when the entrez id or chromosome is missing)
+            # replace the empty spots with the gene name
+            # (example: when the entrez id or chromosome is missing)
             for strings in splitline:
                 if not strings:
                     splitline2.append("nan" + str(index))
@@ -311,33 +326,40 @@ def main():
         raise Exception(
             "No input filename given, please use commandline arguments. "
             "(python3 script2_3.py identifier identifier2)")
-    else:
-        # get the argument and set the variable
-        identifier = [arguments[2], arguments[3]]
-        cutoff_value = arguments[4]
-        requested_symbol = arguments[1]
+    # get the argument and set the variable
+    identifier = [arguments[2], arguments[3]]
+    cutoff_value = arguments[4]
+    requested_symbol = arguments[1]
 
     print("getting identifiers...")
     lines_identifiers = extract_sample_annot(identifier)
     print("extracting genes...")
     gene_probes_dictionary = extract_genes()
     print("calculating highest value probes...")
+
+    # check if there already is a premade list of high value probes.
     if os.path.isfile("High_Value_Probes.csv"):
         print("pre existing file found, using already improved probes")
         high_value_probes = use_premade_probes()
     else:
         print("no pre existing high value probes file found, creating one, this can take a while.")
-        high_value_probes = extract_microarray_content(gene_probes_dictionary, identifier)
+        microarray_content = read_microarray_content()
+        high_value_probes = extract_microarray_content(gene_probes_dictionary, microarray_content)
+        write_intermediate_file(high_value_probes)
     print("removing values below cutoff...")
-    identifier_values1, identifier_values2 = extract_above_cutoff(lines_identifiers, high_value_probes, cutoff_value)
+    identifier_values1, identifier_values2 = \
+        extract_above_cutoff(lines_identifiers, high_value_probes, cutoff_value)
     print("extracting gene names...")
-    identifier_1_gene, identifier_2_gene = gene_name_finder(identifier_values1, identifier_values2, requested_symbol)
+    identifier_1_gene, identifier_2_gene = \
+        gene_name_finder(identifier_values1, identifier_values2, requested_symbol)
     print("checking similarities between genes...")
-    common_genes, unique_genes_1, unique_genes_2 = unique_or_shared(identifier_1_gene, identifier_2_gene)
+    common_genes, unique_genes_1, unique_genes_2 = \
+        unique_or_shared(identifier_1_gene, identifier_2_gene)
     print("done!")
 
     print(
-        f'{len(unique_genes_1)} unique {requested_symbol} for {arguments[2]}: {unique_genes_1} \n{len(unique_genes_2)} unique {requested_symbol} for {arguments[3]}: {unique_genes_2}')
+        f'{len(unique_genes_1)} unique {requested_symbol} for {arguments[2]}: {unique_genes_1} '
+        f'\n{len(unique_genes_2)} unique {requested_symbol} for {arguments[3]}: {unique_genes_2}')
     print(len(common_genes), "shared", requested_symbol, common_genes)
 
 
