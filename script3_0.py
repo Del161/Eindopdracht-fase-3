@@ -2,7 +2,7 @@
 Takes information from a multitude of files, and returns the information the user requested
 Author: Delshad Vegter, Bram Koobs
 date: 01/11/2022
-version: 4
+version: 5
 To use, enter into the commandline:
             python3 script3_0.py (wanted_symbol) identifier1 identifier2 cutoff_value
 example: python3 script3_0.py gene_symbol LHM PHA 17
