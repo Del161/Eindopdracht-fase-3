@@ -3,15 +3,16 @@ Takes information from a multitude of files, and returns the information the use
 Author: Delshad Vegter, Bram Koobs
 date: 01/11/2022
 version: 4
-To use enter in the commandline:
+To use, enter into the commandline:
             python3 script3_0.py (wanted_symbol) identifier1 identifier2 cutoff_value
 example: python3 script3_0.py gene_symbol LHM PHA 17
 possible wanted symbols: gene_symbol, gene_id, gene_name, entrez_id, chromosome
-if the found gene does not have an chromosome or entrez id,-
+if the found gene does not have a chromosome or entrez id,-
 -they get a replacement nan value to still show comparison.
 """
 import sys
-import os.path # to check if a improved file already exists
+import os.path  # to check if an improved file already exists
+
 
 def read_microarray_content():
     """
@@ -24,9 +25,11 @@ def read_microarray_content():
 
     return microarray_content
 
+
 def extract_microarray_content(gene_probes_dictionary, microarray_content):
     """
-    Extract the highest value probes from the micro-array for use
+    Extract the highest value probes from the microarray for use
+    :param microarray_content list of strings
     :param gene_probes_dictionary: dict of lists
     :return: list of lists
     """
@@ -78,21 +81,23 @@ def extract_microarray_content(gene_probes_dictionary, microarray_content):
 
     return high_value_probes
 
+
 def write_intermediate_file(high_value_probes):
     """
     Creates an intermediate file with high value probes
-     if there isnt already one.
+     if there isn't already one
     :param high_value_probes: list of strings
     :return: /
     """
-    # create a file with all the high value probes, so it doesnt have to be repeated the next run.
+    # create a file with all the high value probes, so it doesn't have to be repeated the next run.
     with open("High_Value_Probes.csv", "w") as writefile:
         for lines in high_value_probes:
             writefile.write(lines)
 
+
 def use_premade_probes():
     """
-    if a premade list with high value probes already exists, use that instead of creating one again.
+    if a pre-made list with high value probes already exists, use that instead of creating one again.
     return: list of strings
     """
 
@@ -100,12 +105,13 @@ def use_premade_probes():
         # set file lines to variable
         high_value_probes = list(file.readlines())
 
-    return  high_value_probes
+    return high_value_probes
 
 
 def extract_sample_annot(identifier):
     """
-    :param list of strings
+    extracts important info from the sample annotation
+    :param identifier list of strings
     :returns 2 lists, each containing the corresponding
     line number from the requested structure_acronyms.
     """
@@ -186,6 +192,7 @@ def extract_above_cutoff(line_identifiers, high_value_probes, cutoff_value):
 
     return identifier_values1, identifier_values2
 
+
 def read_probes_content():
     """
     reads the content of probes.csv
@@ -196,13 +203,15 @@ def read_probes_content():
         probes_file_content = list(file.readlines())
     return probes_file_content
 
+
 def gene_name_finder(identifier_values1, identifier_values2, requested_symbol, probes_file_content):
     """
     Finds the requested genes, and makes them into a list
-    :param identifier_values1:
-    :param identifier_values2:
-    :param requested_symbol:
-    :return:
+    :param probes_file_content: list of strings
+    :param identifier_values1: list of strings
+    :param identifier_values2: list of strings
+    :param requested_symbol: string
+    :return: 2 lists of strings
     """
     identifier_1_gene = []
     index_dict = {
@@ -224,7 +233,7 @@ def gene_name_finder(identifier_values1, identifier_values2, requested_symbol, p
                         "gene_id gene_symbol gene_name entrez_id chromosome")
 
     # check if the value at the indicated index is over the cutoff value,
-    # if it is append the probe id
+    # if it is, append the probe id
     for lines in probes_file_content:
         if lines.startswith(tuple(identifier_values1)):
             lines = lines.strip()
@@ -292,7 +301,7 @@ def gene_name_finder(identifier_values1, identifier_values2, requested_symbol, p
 
 def unique_or_shared(identifier_1_gene, identifier_2_gene):
     """
-    take the extracted genes, and create new lists with the shared genes, and unique genes.
+    take the extracted genes, and create new lists with the shared genes, and unique genes
     :param identifier_1_gene: list of genes for identifier 1
     :param identifier_2_gene: list of genes for identifier 2
     :return: list of shared genes, list of unique genes 1 and 2
@@ -350,7 +359,7 @@ def main():
     gene_probes_dictionary = extract_genes()
     print("calculating highest value probes...")
 
-    # check if there already is a premade list of high value probes.
+    # check if there already is a pre-made list of high value probes.
     if os.path.isfile("High_Value_Probes.csv"):
         print("pre existing file found, using already improved probes")
         high_value_probes = use_premade_probes()
