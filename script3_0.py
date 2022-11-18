@@ -122,32 +122,26 @@ def extract_sample_annot(identifier):
     # predefined variables
     lines_identifier1 = []
     lines_identifier2 = []
+    list_identifiers = [lines_identifier1, lines_identifier2]
 
     with open("./data/SampleAnnot.csv", "r") as file:
         sample_annot = list(file.readlines())
 
-    for ids in identifier:
-        # count is 1 lower than it should be, because
-        # the horizontal index starts at 0 not 1
+    for index in range(len(identifier)):
         count = 0
-        # this starts at 1 to skip the header
         for line in sample_annot[1:]:
             count += 1
-            if ids in line:
-                if ids == identifier[0]:
-                    lines_identifier1.append(count)
-                else:
-                    lines_identifier2.append(count)
+            if identifier[index] in line:
+                list_identifiers[index].append(count)
 
     line_identifiers = [lines_identifier1, lines_identifier2]
     # check if there is anything in the list
     # if the list is empty, an invalid structure acronym was given
-    if not lines_identifier1:
-        raise Exception("no matches found for ", identifier[0], ", was there a typo?"
-                        " (program is case sensitive)")
-    elif not lines_identifier2:
-        raise Exception("no matches found for ", identifier[1], ", was there a typo?"
-                        " (program is case sensitive)")
+    for lists in line_identifiers:
+        index_error = line_identifiers.index(lists)
+        if not lists:
+            raise Exception("no matches found for ", identifier[index_error],
+                            "was there a typo? (program is case sensitive)")
     return line_identifiers
 
 
