@@ -145,20 +145,15 @@ def extract_sample_annot(identifier):
     return line_identifiers
 
 
-def extract_genes():
+def extract_genes(probes_file_content):
     """
     Extract the genes from the file, and put them in a dictionary with the probe id as key
     :return: dict of strings with lists.
     """
-
     # predefined vars
     gene_probes_dictionary = {}
 
-    with open("./data/Probes.csv", "r") as file:
-        # set file lines to variable
-        file_content = list(file.readlines())
-
-    for lines in file_content[1:]:
+    for lines in probes_file_content[1:]:
         # split the lines, take the gene id and probe id
         lines = lines.split(",")
         gene_id = lines[3]
@@ -214,7 +209,7 @@ def read_probes_content():
     return probes_file_content
 
 
-def gene_name_finder(identifier_values1, identifier_values2, requested_symbol):
+def gene_name_finder(identifier_values1, identifier_values2, requested_symbol, probes_file_content):
     """
     Finds the requested genes, and makes them into a list
     :param identifier_values1: list of strings
@@ -237,7 +232,6 @@ def gene_name_finder(identifier_values1, identifier_values2, requested_symbol):
     splitline3 = []
     index = -1
 
-    probes_file_content = read_probes_content()
 
     if requested_symbol in index_dict:
         requested_index = index_dict.get(requested_symbol)
@@ -320,7 +314,8 @@ def main():
     print("getting identifiers...")
     lines_identifiers = extract_sample_annot(identifier)
     print("extracting genes...")
-    gene_probes_dictionary = extract_genes()
+    probes_file_content = read_probes_content()
+    gene_probes_dictionary = extract_genes(probes_file_content)
     print("calculating highest value probes...")
 
     # check if there already is a pre-made list of high value probes.
@@ -338,7 +333,7 @@ def main():
 
     print("extracting gene names...")
     identifier_1_gene, identifier_2_gene, identifier_shared_genes = \
-        gene_name_finder(identifier_values1, identifier_values2, requested_symbol)
+        gene_name_finder(identifier_values1, identifier_values2, requested_symbol, probes_file_content)
     print("done!")
 
     print(
