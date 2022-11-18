@@ -2,10 +2,12 @@
 Takes information from a multitude of files, and returns the information the user requested
 Author: Delshad Vegter
 date: 01/11/2022
-version: 5.1
+version: 5.5
+
 To use, enter into the commandline:
             python3 script3_0.py (wanted_symbol) identifier1 identifier2 cutoff_value
 example: python3 script3_0.py gene_symbol LHM PHA 17
+
 possible requested symbols: gene_symbol, gene_id, gene_name, entrez_id, chromosome
 if the found gene does not have a chromosome or entrez id,-
 -they get a replacement nan value to still show comparison.
@@ -39,14 +41,15 @@ def extract_microarray_content(gene_probes_dictionary):
     high_value_probes = []
     row_values = []
 
+    # get the file content
     microarray_content = read_microarray_content()
+
     # take each line, turn the id into a key and the content into the key content.
     for line in microarray_content:
         line = line.strip().split(",")
         probe_id = line.pop(0)
         probe_content = line
         microarray_data[probe_id] = probe_content
-
     print("created dictionary...")
 
     for genes in gene_probes_dictionary:
@@ -65,8 +68,7 @@ def extract_microarray_content(gene_probes_dictionary):
             row_values.append(average)
 
         # get the index of the probe with the highest value, and append it to a list
-        highest_value = max(row_values)
-        best_probe_index = row_values.index(highest_value)
+        best_probe_index = row_values.index(max(row_values))
         row_values = []
         # make a list with all the highest value probes
         highest_value_probe_gene.append(probe_numbers[best_probe_index])
@@ -231,7 +233,7 @@ def gene_name_finder(identifier_values1, identifier_values2, requested_symbol):
         "chromosome": 6
     }
     splitline3 = []
-    index = 0
+    index = -1
 
     probes_file_content = read_probes_content()
 
@@ -244,10 +246,11 @@ def gene_name_finder(identifier_values1, identifier_values2, requested_symbol):
     # check if the value at the indicated index is over the cutoff value,
     # if it is, append the probe id
     for lines in probes_file_content[1:]:
-
+        index += 1
         # check which list it should be appended to
-        # so shared id1 or id2
-        if lines.startswith(tuple(identifier_values1)) and lines.startswith(tuple(identifier_values2)):
+        # so shared, id1 or id2
+        if lines.startswith(tuple(identifier_values1)) and \
+                lines.startswith(tuple(identifier_values2)):
             correct_list = 2
         elif lines.startswith(tuple(identifier_values1)):
             correct_list = 0
@@ -274,7 +277,6 @@ def gene_name_finder(identifier_values1, identifier_values2, requested_symbol):
                 for lists in blocks:
                     for i in lists:
                         splitline.append(i)
-                print("long line", splitline)
             # replace the empty spots with the gene name
             # (example: when the entrez id or chromosome is missing)
             for strings in splitline:
@@ -303,9 +305,9 @@ def main():
     try:
         # if this runs it's a valid input
         cutoff_value = float(arguments[4])
-    except ValueError:
+    except ValueError as invalid_cutoff_value:
         # if it gives a ValueError, report that to the user
-        raise Exception("cutoff value is not a valid number")
+        raise Exception("invalid cutoff value") from invalid_cutoff_value
 
     # get the argument and set the variable
     identifier = [arguments[2], arguments[3]]
@@ -337,8 +339,10 @@ def main():
     print("done!")
 
     print(
-        f'{len(list(identifier_1_gene))} unique {requested_symbol} for {arguments[2]}: {list(identifier_1_gene)} '
-        f'\n{len(list(identifier_2_gene))} unique {requested_symbol} for {arguments[3]}: {identifier_2_gene}')
+        f'{len(list(identifier_1_gene))} unique {requested_symbol} '
+        f'for {arguments[2]}: {list(identifier_1_gene)} '
+        f'\n{len(list(identifier_2_gene))} unique {requested_symbol} '
+        f'for {arguments[3]}: {identifier_2_gene}')
     print(len(identifier_shared_genes), "shared", requested_symbol, identifier_shared_genes)
 
 
