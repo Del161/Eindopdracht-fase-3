@@ -2,7 +2,7 @@
 Takes information from a multitude of files, and returns the information the user requested
 Author: Delshad Vegter
 date: 01/11/2022
-version: 5
+version: 5.1
 To use, enter into the commandline:
             python3 script3_0.py (wanted_symbol) identifier1 identifier2 cutoff_value
 example: python3 script3_0.py gene_symbol LHM PHA 17
@@ -10,7 +10,7 @@ possible requested symbols: gene_symbol, gene_id, gene_name, entrez_id, chromoso
 if the found gene does not have a chromosome or entrez id,-
 -they get a replacement nan value to still show comparison.
 """
-import sys
+import sys # for commandline arguments
 import os.path  # to check if an improved file already exists
 
 
@@ -26,10 +26,9 @@ def read_microarray_content():
     return microarray_content
 
 
-def extract_microarray_content(gene_probes_dictionary, microarray_content):
+def extract_microarray_content(gene_probes_dictionary):
     """
     Extract the highest value probes from the microarray for use
-    :param microarray_content list of strings
     :param gene_probes_dictionary: dict of lists
     :return: list of lists
     """
@@ -40,6 +39,7 @@ def extract_microarray_content(gene_probes_dictionary, microarray_content):
     high_value_probes = []
     row_values = []
 
+    microarray_content = read_microarray_content()
     # take each line, turn the id into a key and the content into the key content.
     for line in microarray_content:
         line = line.strip().split(",")
@@ -97,7 +97,8 @@ def write_intermediate_file(high_value_probes):
 
 def use_premade_probes():
     """
-    if a pre-made list with high value probes already exists, use that instead of creating one again.
+    if a pre-made list with high value probes already exists,
+    use that list instead of creating a new one again.
     return: list of strings
     """
 
@@ -171,9 +172,9 @@ def extract_genes():
 def extract_above_cutoff(line_identifiers, high_value_probes, cutoff_value):
     """
     extract the values at the correct index, if they are
-    :param line_identifiers:
-    :param high_value_probes:
-    :param cutoff_value:
+    :param line_identifiers: list of strings
+    :param high_value_probes: list of strings
+    :param cutoff_value: integer
     :return: 2 lists
     """
 
@@ -181,6 +182,8 @@ def extract_above_cutoff(line_identifiers, high_value_probes, cutoff_value):
     identifier_values1 = []
     identifier_values2 = []
 
+    # can probably do this faster
+    # go through the list and append only the values above the cutoff
     for lines in high_value_probes:
         lines = lines.split(",")
         probe_id = lines.pop(0)
@@ -207,10 +210,9 @@ def read_probes_content():
     return probes_file_content
 
 
-def gene_name_finder(identifier_values1, identifier_values2, requested_symbol, probes_file_content):
+def gene_name_finder(identifier_values1, identifier_values2, requested_symbol):
     """
     Finds the requested genes, and makes them into a list
-    :param probes_file_content: list of strings
     :param identifier_values1: list of strings
     :param identifier_values2: list of strings
     :param requested_symbol: string
@@ -229,6 +231,8 @@ def gene_name_finder(identifier_values1, identifier_values2, requested_symbol, p
     splitline3 = []
     index = 0
 
+    probes_file_content = read_probes_content()
+
     if requested_symbol in index_dict:
         requested_index = index_dict.get(requested_symbol)
     else:
@@ -242,8 +246,8 @@ def gene_name_finder(identifier_values1, identifier_values2, requested_symbol, p
             lines = lines.strip()
             splitline = lines.split(",")
             if len(splitline) > 7:
-                # if the list is too long, that means there was a comma in the gene name,
-                # combine them again, this won't work if there is more than 1 comma in the gene name.
+                # if the list is too long, that means there was a comma in the gene name
+                # combine them again, this won't work if there is more than 1 comma in the gene name
                 # if you get a key error, edit this to handle more commas.
                 block1 = splitline[0:4]
                 block2 = splitline[4:6]
@@ -273,8 +277,8 @@ def gene_name_finder(identifier_values1, identifier_values2, requested_symbol, p
             lines = lines.strip()
             splitline = lines.split(",")
             if len(splitline) > 7:
-                # if the list is too long, that means there was a comma in the gene name,
-                # combine them again, this won't work if there is more than 1 comma in the gene name.
+                # if the list is too long, that means there was a comma in the gene name
+                # combine them again, this won't work if there is more than 1 comma in the gene name
                 # if you get a key error, edit this to handle more commas.
                 block1 = splitline[0:4]
                 block2 = splitline[4:6]
@@ -370,8 +374,7 @@ def main():
         high_value_probes = use_premade_probes()
     else:
         print("no pre existing high value probes file found, creating one, this can take a while.")
-        microarray_content = read_microarray_content()
-        high_value_probes = extract_microarray_content(gene_probes_dictionary, microarray_content)
+        high_value_probes = extract_microarray_content(gene_probes_dictionary)
         write_intermediate_file(high_value_probes)
 
     print("removing values below cutoff...")
@@ -379,10 +382,8 @@ def main():
         extract_above_cutoff(lines_identifiers, high_value_probes, cutoff_value)
 
     print("extracting gene names...")
-    probes_file_content = read_probes_content()
     identifier_1_gene, identifier_2_gene = \
-        gene_name_finder(identifier_values1, identifier_values2,
-                         requested_symbol, probes_file_content)
+        gene_name_finder(identifier_values1, identifier_values2, requested_symbol)
 
     print("checking similarities between genes...")
     common_genes, unique_genes_1, unique_genes_2 = \
