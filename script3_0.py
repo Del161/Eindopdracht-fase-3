@@ -97,7 +97,7 @@ def write_intermediate_file(high_value_probes):
             writefile.write(lines)
 
 
-def use_premade_probes():
+def use_pre_made_probes():
     """
     if a pre-made list with high value probes already exists,
     use that list instead of creating a new one again.
@@ -140,6 +140,14 @@ def extract_sample_annot(identifier):
                     lines_identifier2.append(count)
 
     line_identifiers = [lines_identifier1, lines_identifier2]
+    # check if there is anything in the list
+    # if the list is empty, an invalid structure acronym was given
+    if not lines_identifier1:
+        raise Exception("no matches found for ", identifier[0], ", was there a typo?"
+                        " (program is case sensitive)")
+    elif not lines_identifier2:
+        raise Exception("no matches found for ", identifier[1], ", was there a typo?"
+                        " (program is case sensitive)")
     return line_identifiers
 
 
@@ -249,6 +257,8 @@ def gene_name_finder(identifier_values1, identifier_values2, requested_symbol):
         index += 1
         # check which list it should be appended to
         # so shared, id1 or id2
+        # if it isn't in any of the lists, the value is set to 3,
+        # and it repeats until it is in one of the lists
         if lines.startswith(tuple(identifier_values1)) and \
                 lines.startswith(tuple(identifier_values2)):
             correct_list = 2
@@ -264,8 +274,7 @@ def gene_name_finder(identifier_values1, identifier_values2, requested_symbol):
             splitline = lines.split(",")
             if len(splitline) > 7:
                 # if the list is too long, that means there was a comma in the gene name
-                # combine them again, this won't work if there is more than 1 comma in the gene name
-                # if you get a key error, edit this to handle more commas.
+                # this combines them again
                 block1 = splitline[0:4]
                 block2 = splitline[4:-2]
                 block2.insert(1, ",")
@@ -277,7 +286,7 @@ def gene_name_finder(identifier_values1, identifier_values2, requested_symbol):
                 for lists in blocks:
                     for i in lists:
                         splitline.append(i)
-            # replace the empty spots with the gene name
+            # replace the empty spots with nan+index
             # (example: when the entrez id or chromosome is missing)
             for strings in splitline:
                 if not strings:
@@ -323,7 +332,7 @@ def main():
     # check if there already is a pre-made list of high value probes.
     if os.path.isfile("High_Value_Probes.csv"):
         print("pre existing file found, using already improved probes")
-        high_value_probes = use_premade_probes()
+        high_value_probes = use_pre_made_probes()
     else:
         print("no pre existing high value probes file found, creating one, this can take a while.")
         high_value_probes = extract_microarray_content(gene_probes_dictionary)
