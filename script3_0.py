@@ -10,7 +10,7 @@ possible requested symbols: gene_symbol, gene_id, gene_name, entrez_id, chromoso
 if the found gene does not have a chromosome or entrez id,-
 -they get a replacement nan value to still show comparison.
 """
-import sys # for commandline arguments
+import sys  # for commandline arguments
 import os.path  # to check if an improved file already exists
 
 
@@ -218,7 +218,11 @@ def gene_name_finder(identifier_values1, identifier_values2, requested_symbol):
     :param requested_symbol: string
     :return: 2 lists of strings
     """
+
     identifier_1_gene = []
+    identifier_2_gene = []
+    identifier_shared_genes = []
+    identifier_genes = [identifier_1_gene, identifier_2_gene, identifier_shared_genes]
     index_dict = {
         "gene_id": 2,
         "gene_symbol": 3,
@@ -226,8 +230,6 @@ def gene_name_finder(identifier_values1, identifier_values2, requested_symbol):
         "entrez_id": 5,
         "chromosome": 6
     }
-    identifier_2_gene = []
-    splitline2 = []
     splitline3 = []
     index = 0
 
@@ -241,8 +243,20 @@ def gene_name_finder(identifier_values1, identifier_values2, requested_symbol):
 
     # check if the value at the indicated index is over the cutoff value,
     # if it is, append the probe id
-    for lines in probes_file_content:
-        if lines.startswith(tuple(identifier_values1)):
+    for lines in probes_file_content[1:]:
+
+        # check which list it should be appended to
+        # so shared id1 or id2
+        if lines.startswith(tuple(identifier_values1)) and lines.startswith(tuple(identifier_values2)):
+            correct_list = 2
+        elif lines.startswith(tuple(identifier_values1)):
+            correct_list = 0
+        elif lines.startswith(tuple(identifier_values2)):
+            correct_list = 1
+        else:
+            correct_list = 3
+
+        if correct_list < 3:
             lines = lines.strip()
             splitline = lines.split(",")
             if len(splitline) > 7:
@@ -250,17 +264,17 @@ def gene_name_finder(identifier_values1, identifier_values2, requested_symbol):
                 # combine them again, this won't work if there is more than 1 comma in the gene name
                 # if you get a key error, edit this to handle more commas.
                 block1 = splitline[0:4]
-                block2 = splitline[4:6]
+                block2 = splitline[4:-2]
                 block2.insert(1, ",")
-                block3 = splitline[6:]
+                block3 = splitline[-2:]
                 block2 = list(["".join(block2)])
                 blocks = [block1, block2, block3]
                 splitline = []
-
                 # append them into one list again
                 for lists in blocks:
                     for i in lists:
                         splitline.append(i)
+                print("long line", splitline)
             # replace the empty spots with the gene name
             # (example: when the entrez id or chromosome is missing)
             for strings in splitline:
@@ -268,79 +282,10 @@ def gene_name_finder(identifier_values1, identifier_values2, requested_symbol):
                     splitline3.append("nan" + str(index))
                 else:
                     splitline3.append(strings)
-
-            identifier_1_gene.append(splitline3[int(requested_index)].strip())
+            identifier_genes[correct_list].append(splitline3[int(requested_index)].strip())
             splitline3 = []
 
-        # repeat for the second given identifier
-        if lines.startswith(tuple(identifier_values2)):
-            lines = lines.strip()
-            splitline = lines.split(",")
-            if len(splitline) > 7:
-                # if the list is too long, that means there was a comma in the gene name
-                # combine them again, this won't work if there is more than 1 comma in the gene name
-                # if you get a key error, edit this to handle more commas.
-                block1 = splitline[0:4]
-                block2 = splitline[4:6]
-                block2.insert(1, ",")
-                block3 = splitline[6:]
-                block2 = list(["".join(block2)])
-                blocks = [block1, block2, block3]
-                splitline = []
-
-                # append them into one list again
-                for lists in blocks:
-                    for i in lists:
-                        splitline.append(i)
-            # replace the empty spots with the gene name
-            # (example: when the entrez id or chromosome is missing)
-            for strings in splitline:
-                if not strings:
-                    splitline2.append("nan" + str(index))
-                else:
-                    splitline2.append(strings)
-            index += 1
-            identifier_2_gene.append(splitline2[int(requested_index)].strip())
-            splitline2 = []
-
-    return set(identifier_1_gene), set(identifier_2_gene)
-
-
-def unique_or_shared(identifier_1_gene, identifier_2_gene):
-    """
-    take the extracted genes, and create new lists with the shared genes, and unique genes
-    :param identifier_1_gene: list of genes for identifier 1
-    :param identifier_2_gene: list of genes for identifier 2
-    :return: list of shared genes, list of unique genes 1 and 2
-    """
-
-    # prepare lists for use
-    identifier_1_gene = list(identifier_1_gene)
-    identifier_2_gene = list(identifier_2_gene)
-    common_genes = []
-    unique_genes_1 = []
-    unique_genes_2 = []
-
-    # extract the genes that appear in both lists
-    if len(identifier_1_gene) > len(identifier_2_gene):
-        # check if the genes in the shorter list are in the longer list
-        for genes in identifier_2_gene:
-            if identifier_1_gene.count(genes) > 0:
-                common_genes.append(genes)
-    else:
-        for genes in identifier_1_gene:
-            if identifier_2_gene.count(genes) > 0:
-                common_genes.append(genes)
-
-    # extract the genes that are unique to each list
-    for genes in identifier_1_gene:
-        if genes not in common_genes:
-            unique_genes_1.append(genes)
-    for genes in identifier_2_gene:
-        if genes not in common_genes:
-            unique_genes_2.append(genes)
-
-    return common_genes, unique_genes_1, unique_genes_2
+    return set(identifier_1_gene), set(identifier_2_gene), set(identifier_shared_genes)
 
 
 def main():
@@ -353,12 +298,17 @@ def main():
 
     if len(arguments) < 5:
         raise Exception(
-            "No input filename given, please use commandline arguments. "
-            "(python3 script2_3.py identifier identifier2)")
+            "too few arguments, please use: "
+            "(python3 script2_3.py wanted_symbol identifier1 identifier2 cutoff_value)")
+    try:
+        # if this runs it's a valid input
+        cutoff_value = float(arguments[4])
+    except ValueError:
+        # if it gives a ValueError, report that to the user
+        raise Exception("cutoff value is not a valid number")
 
     # get the argument and set the variable
     identifier = [arguments[2], arguments[3]]
-    cutoff_value = arguments[4]
     requested_symbol = arguments[1]
 
     # print lines to track progress
@@ -382,18 +332,14 @@ def main():
         extract_above_cutoff(lines_identifiers, high_value_probes, cutoff_value)
 
     print("extracting gene names...")
-    identifier_1_gene, identifier_2_gene = \
+    identifier_1_gene, identifier_2_gene, identifier_shared_genes = \
         gene_name_finder(identifier_values1, identifier_values2, requested_symbol)
-
-    print("checking similarities between genes...")
-    common_genes, unique_genes_1, unique_genes_2 = \
-        unique_or_shared(identifier_1_gene, identifier_2_gene)
     print("done!")
 
     print(
-        f'{len(unique_genes_1)} unique {requested_symbol} for {arguments[2]}: {unique_genes_1} '
-        f'\n{len(unique_genes_2)} unique {requested_symbol} for {arguments[3]}: {unique_genes_2}')
-    print(len(common_genes), "shared", requested_symbol, common_genes)
+        f'{len(list(identifier_1_gene))} unique {requested_symbol} for {arguments[2]}: {list(identifier_1_gene)} '
+        f'\n{len(list(identifier_2_gene))} unique {requested_symbol} for {arguments[3]}: {identifier_2_gene}')
+    print(len(identifier_shared_genes), "shared", requested_symbol, identifier_shared_genes)
 
 
 # to protect against problems when imported
